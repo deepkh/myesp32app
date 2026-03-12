@@ -13,13 +13,12 @@
 bool initalSucceeded = false;
 
 const char *mqttSwtichSet[] = {
+    g_espconfig.switch1_config.mqtt_set,
     g_espconfig.switch2_config.mqtt_set,
-    g_espconfig.switch3_config.mqtt_set,
-
 };
 const char *mqttSwtichStates[] = {
+    g_espconfig.switch1_config.mqtt_status,
     g_espconfig.switch2_config.mqtt_status,
-    g_espconfig.switch3_config.mqtt_status,
 };
 const int mqttSwtichLen = sizeof(mqttSwtichSet) / sizeof(mqttSwtichSet[0]);
 
@@ -32,11 +31,11 @@ static int pirCurrStatus = -1;
 static int pirPrevStatus = -1;
 unsigned long lastPirTriggered = 0;
 
-static int lampPrevStatus = -1;
-unsigned long lastLampTriggered = 0;
+static int lamp1PrevStatus = -1;
+unsigned long lastLamp1Triggered = 0;
 
-static int fanPrevStatus = -1;
-unsigned long lastFanTriggered = 0;
+static int lamp2PrevStatus = -1;
+unsigned long lastLamp2Triggered = 0;
 
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
 {
@@ -48,13 +47,13 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.hcsr501_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
       break;
     case 1:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch3_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch3_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
       break;
     }
   }
@@ -63,10 +62,10 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch2_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch1_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
       break;
     case 1:
-      digitalWrite(g_espconfig.switch3_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch2_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
       break;
     }
   }
@@ -123,57 +122,57 @@ static void handlePirStatus(unsigned int now, int status)
   }
 }
 
-static void handleLampStatus(unsigned int now, int status)
+static void handleLamp1Status(unsigned int now, int status)
 {
-  if (lampPrevStatus == 0 && status == 0)
+  if (lamp1PrevStatus == 0 && status == 0)
   {
   }
-  else if (lampPrevStatus == 0 && status == 1)
+  else if (lamp1PrevStatus == 0 && status == 1)
+  {
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, "ON");
+    lamp1PrevStatus = status;
+    lastLamp1Triggered = now;
+  }
+  else if (lamp1PrevStatus == 1 && status == 0)
+  {
+    // Turn lamp1 off after 30 seconds
+    if ((now - lastLamp1Triggered) < 30000)
+    {
+      return;
+    }
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, "OFF");
+    lamp1PrevStatus = status;
+  }
+  else if (lamp1PrevStatus == 1 && status == 1)
+  {
+    lastLamp1Triggered = now;
+  }
+}
+
+static void handleLamp2Status(unsigned int now, int status)
+{
+  if (lamp2PrevStatus == 0 && status == 0)
+  {
+  }
+  else if (lamp2PrevStatus == 0 && status == 1)
   {
     espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "ON");
-    lampPrevStatus = status;
-    lastLampTriggered = now;
+    lamp2PrevStatus = status;
+    lastLamp2Triggered = now;
   }
-  else if (lampPrevStatus == 1 && status == 0)
+  else if (lamp2PrevStatus == 1 && status == 0)
   {
-    // Turn lamp off after 300 seconds
-    if ((now - lastLampTriggered) < 300000)
+    // Turn lamp2 off after 20 seconds
+    if ((now - lastLamp2Triggered) < 20000)
     {
       return;
     }
     espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "OFF");
-    lampPrevStatus = status;
+    lamp2PrevStatus = status;
   }
-  else if (lampPrevStatus == 1 && status == 1)
+  else if (lamp2PrevStatus == 1 && status == 1)
   {
-    lastLampTriggered = now;
-  }
-}
-
-static void handleFanStatus(unsigned int now, int status)
-{
-  if (fanPrevStatus == 0 && status == 0)
-  {
-  }
-  else if (fanPrevStatus == 0 && status == 1)
-  {
-    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch3_config.mqtt_set, "ON");
-    fanPrevStatus = status;
-    lastFanTriggered = now;
-  }
-  else if (fanPrevStatus == 1 && status == 0)
-  {
-    // Turn fan off after 10800 seconds
-    if ((now - lastFanTriggered) < 10800000)
-    {
-      return;
-    }
-    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch3_config.mqtt_set, "OFF");
-    fanPrevStatus = status;
-  }
-  else if (fanPrevStatus == 1 && status == 1)
-  {
-    lastFanTriggered = now;
+    lastLamp2Triggered = now;
   }
 }
 
@@ -186,25 +185,25 @@ void setup()
   Serial.println('\n');
 
   // initialize digital pin LED_BUILTIN as an output.
+  pinMode(g_espconfig.switch1_config.pin, OUTPUT);
   pinMode(g_espconfig.switch2_config.pin, OUTPUT);
-  pinMode(g_espconfig.switch3_config.pin, OUTPUT);
 
   // set default switchs value
   delay(10);
+  digitalWrite(g_espconfig.switch1_config.pin, g_espconfig.switch1_config.default_value);
   digitalWrite(g_espconfig.switch2_config.pin, g_espconfig.switch2_config.default_value);
-  digitalWrite(g_espconfig.switch3_config.pin, g_espconfig.switch2_config.default_value);
 
-  if (g_espconfig.switch2_config.default_value)
+  if (g_espconfig.switch1_config.default_value)
   {
     lastPirTriggered = millis();
-    lastFanTriggered = lastPirTriggered;
-    lastLampTriggered = lastPirTriggered;
+    lastLamp1Triggered = lastPirTriggered;
+    lastLamp2Triggered = lastPirTriggered;
   }
 
-  pirCurrStatus = g_espconfig.switch2_config.default_value;
+  pirCurrStatus = g_espconfig.switch1_config.default_value;
   pirPrevStatus = pirCurrStatus;
-  lampPrevStatus = pirCurrStatus;
-  fanPrevStatus = pirCurrStatus;
+  lamp1PrevStatus = pirCurrStatus;
+  lamp2PrevStatus = pirCurrStatus;
 
   if (!espApp.setup())
   {
@@ -213,9 +212,9 @@ void setup()
   }
 
   espApp.mqtt_.RegisterMqttSwitchSets(mqttSwtichSet, mqttSwtichStates, mqttSwitchHandler, mqttSwtichLen);
-  // esp.RegisterMqttConnectedCallback(handleMqttConnected);
-  // espApp.dht_.RegisterDhtCallback(handleDhtCallback);
-  // espApp.mq135_.RegisterMq135Callback(handleMq135Callback);
+  // esp.RegisterMqttConnectedCallback(HandleMqttConnected);
+  espApp.dht_.RegisterDhtCallback(handleDhtCallback);
+  espApp.mq135_.RegisterMq135Callback(handleMq135Callback);
   espApp.hcsr501_.RegisterHchr501Callback(handleHchr501Callback);
 
   if (!espApp.begin())
@@ -237,6 +236,6 @@ void loop()
   unsigned long now = millis();
   espApp.loop(now);
   handlePirStatus(now, pirCurrStatus);
-  handleLampStatus(now, pirCurrStatus);
-  handleFanStatus(now, pirCurrStatus);
+  handleLamp1Status(now, pirCurrStatus);
+  handleLamp2Status(now, pirCurrStatus);
 }
