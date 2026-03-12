@@ -1,0 +1,9 @@
+{
+  "name": "myesp",
+  "version": "1.0.0",
+  "description": "Helper libary for ESP32 and ESP8266 ",
+  "keywords": ["esp32", "esp8266", "shared"],
+  "frameworks": ["arduino"],
+  "platforms": ["espressif8266", "espressif32"],
+  "license": "MIT"
+}

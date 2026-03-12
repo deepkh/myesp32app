@@ -1,0 +1,3 @@
+.vscode/
+.pio/
+myesp/include/EspConfigPrivate.h
