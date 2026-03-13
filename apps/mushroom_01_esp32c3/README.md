@@ -1,5 +1,12 @@
 # Realy, PIR Motion Sensor and Temperature Sensor detection on ESP32-C3
 
+
+<img width="538" height="338" alt="image" src="https://github.com/user-attachments/assets/a9ca5fca-8ff1-426b-8b69-ae50cea13995" />
+
+
+<img width="538" height="338" alt="image" src="https://github.com/user-attachments/assets/095159fb-7db1-4217-aa19-a80adfbbc0e7" />
+
+
 ## Scenario
 1. Switch 1: `Turn on` the `lamp` while `PIR motion sensor` is detected. `Turn off` the `lamp` when there is no `PIR Motion sensor`  detected during `300 seconds`. 
 2. Switch 2: `Turn on` the `fan` while `PIR Motion sensor` is detected. `Turn off` the `fan` when there is no `PIR Motion sensor` detected during `10800 seconds`.
