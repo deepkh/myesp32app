@@ -1,4 +1,4 @@
-# Realy, PIR Motion Sensor and Temperature Sensor detection on ESP32-C3
+# Realy, PIR Motion Sensor and Temperature Sensor detection and control on ESP32-C3
 
 
 <img width="538" height="338" alt="image" src="https://github.com/user-attachments/assets/a9ca5fca-8ff1-426b-8b69-ae50cea13995" />
