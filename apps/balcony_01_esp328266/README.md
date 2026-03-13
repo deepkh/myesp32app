@@ -1,4 +1,7 @@
 # Switchs, PIR Motion Sensor, Temperature, Humidity and Air Quality sensors detection on ESP32 8266
+
+<img src=https://github.com/user-attachments/assets/3d47ed5c-9fe3-4e8d-aee0-bf263e704503 width=320 height=390>
+
 ## Scenario
 1. Switch 1: `Turn on` the `lamp1` while `PIR motion sensor` is detected.`Turn off` the `lamp1` when there is no `PIR Motion sensor`  detected during `60 seconds`. 
 2. Switch 2: `Turn on` the `lamp2` while `PIR Motion sensor` is detected.`Turn off` the `lamp2` when there is no `PIR Motion sensor` detected during `30 seconds`.
