@@ -10,36 +10,39 @@
 #include "EspApp.h"
 #include "EspConfig.h"
 
-bool initalSucceeded = false;
+static bool initalSucceeded = false;
 
-const char *mqttSwtichSet[] = {
+static const char *mqttSwtichSet[] = {
     g_espconfig.switch2_config.mqtt_set,
     g_espconfig.switch3_config.mqtt_set,
 
 };
-const char *mqttSwtichStates[] = {
+static const char *mqttSwtichStates[] = {
     g_espconfig.switch2_config.mqtt_status,
     g_espconfig.switch3_config.mqtt_status,
 };
-const int mqttSwtichLen = sizeof(mqttSwtichSet) / sizeof(mqttSwtichSet[0]);
+static const int mqttSwtichLen = sizeof(mqttSwtichSet) / sizeof(mqttSwtichSet[0]);
 
 static int mqttSwitchCallbackCounter[] = {
     0,
     0,
 };
 
+static unsigned long now = 0;
+
 static int pirCurrStatus = -1;
 static int pirPrevStatus = -1;
-unsigned long lastPirTriggered = 0;
+static unsigned long lastPirTriggered = 0;
 
 static int lampPrevStatus = -1;
-unsigned long lastLampTriggered = 0;
+static unsigned long lastLampTriggered = 0;
 
 static int fanPrevStatus = -1;
-unsigned long lastFanTriggered = 0;
+static unsigned long lastFanTriggered = 0;
 
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
 {
+  int status = strcmp(msg, "ON") == 0;
   Serial.printf("mqttSwitchHandler %d '%s' -> '%s'\n", index, topic, msg);
 
   // Sync up in the initial stage
@@ -63,10 +66,20 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch2_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch2_config.pin, status ? HIGH : LOW);
+      lampPrevStatus = status;
+      if (status)
+      {
+        lastLampTriggered = now;
+      }
       break;
     case 1:
-      digitalWrite(g_espconfig.switch3_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch3_config.pin, status ? HIGH : LOW);
+      fanPrevStatus = status;
+      if (status)
+      {
+        lastFanTriggered = now;
+      }
       break;
     }
   }
@@ -234,7 +247,7 @@ void loop()
     return;
   }
 
-  unsigned long now = millis();
+  now = millis();
   espApp.loop(now);
   handlePirStatus(now, pirCurrStatus);
   handleLampStatus(now, pirCurrStatus);

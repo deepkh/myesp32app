@@ -10,13 +10,13 @@
 #include "EspApp.h"
 #include "EspConfig.h"
 
-bool initalSucceeded = false;
+static bool initalSucceeded = false;
 
-const char *mqttSwtichSet[] = {
+static const char *mqttSwtichSet[] = {
     g_espconfig.switch1_config.mqtt_set,
     g_espconfig.switch2_config.mqtt_set,
 };
-const char *mqttSwtichStates[] = {
+static const char *mqttSwtichStates[] = {
     g_espconfig.switch1_config.mqtt_status,
     g_espconfig.switch2_config.mqtt_status,
 };
@@ -27,18 +27,21 @@ static int mqttSwitchCallbackCounter[] = {
     0,
 };
 
+static unsigned long now = 0;
+
 static int pirCurrStatus = -1;
 static int pirPrevStatus = -1;
-unsigned long lastPirTriggered = 0;
+static unsigned long lastPirTriggered = 0;
 
 static int lamp1PrevStatus = -1;
-unsigned long lastLamp1Triggered = 0;
+static unsigned long lastLamp1Triggered = 0;
 
 static int lamp2PrevStatus = -1;
-unsigned long lastLamp2Triggered = 0;
+static unsigned long lastLamp2Triggered = 0;
 
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
 {
+  int status = strcmp(msg, "ON") == 0;
   Serial.printf("mqttSwitchHandler %d '%s' -> '%s'\n", index, topic, msg);
 
   // Sync up in the initial stage
@@ -62,10 +65,20 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch1_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch1_config.pin, status ? HIGH : LOW);
+      lamp1PrevStatus = status;
+      if (status)
+      {
+        lastLamp1Triggered = now;
+      }
       break;
     case 1:
-      digitalWrite(g_espconfig.switch2_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch2_config.pin, status ? HIGH : LOW);
+      lamp2PrevStatus = status;
+      if (status)
+      {
+        lastLamp2Triggered = now;
+      }
       break;
     }
   }
@@ -135,8 +148,8 @@ static void handleLamp1Status(unsigned int now, int status)
   }
   else if (lamp1PrevStatus == 1 && status == 0)
   {
-    // Turn lamp1 off after 30 seconds
-    if ((now - lastLamp1Triggered) < 30000)
+    // Turn lamp1 off after 60 seconds
+    if ((now - lastLamp1Triggered) < 60000)
     {
       return;
     }
@@ -162,8 +175,8 @@ static void handleLamp2Status(unsigned int now, int status)
   }
   else if (lamp2PrevStatus == 1 && status == 0)
   {
-    // Turn lamp2 off after 20 seconds
-    if ((now - lastLamp2Triggered) < 20000)
+    // Turn lamp2 off after 30 seconds
+    if ((now - lastLamp2Triggered) < 30000)
     {
       return;
     }
@@ -233,7 +246,7 @@ void loop()
     return;
   }
 
-  unsigned long now = millis();
+  now = millis();
   espApp.loop(now);
   handlePirStatus(now, pirCurrStatus);
   handleLamp1Status(now, pirCurrStatus);
