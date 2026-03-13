@@ -1,5 +1,9 @@
 # My ESP32 APP
 
+![GitHub License](https://img.shields.io/github/license/deepkh/myesp32app?color=green) [![Build firmware](https://github.com/deepkh/myesp32app/actions/workflows/release.yml/badge.svg)](https://github.com/deepkh/myesp32app/actions) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/deepkh/myesp32app?color=blue) ![PlatformIO](https://img.shields.io/badge/PlatformIO-orange?logo=platformio&logoColor=white) ![ESP32](https://img.shields.io/badge/Hardware-ESP32--C3-blue?logo=espressif&logoColor=white)
+![ESP8266](https://img.shields.io/badge/Hardware-ESP8266-lightgrey?logo=espressif&logoColor=white)
+
+
 Some helper functions to initialize the related modules of ESP32-IDF for ESP32 and ESP8266 using VSCode and PlatformIO quickly.
 
 ## Purposes

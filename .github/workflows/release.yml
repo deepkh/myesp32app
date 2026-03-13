@@ -1,0 +1,65 @@
+name: Build firmware
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app:
+          - apps/balcony_01_esp328266
+          - apps/mushroom_01_esp32c3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO
+        run: pip install platformio==6.1.19
+
+      - name: Build firmware
+        working-directory: ${{ matrix.app }}
+        run: pio run
+
+      - name: Prepare firmware for upload
+        run: |
+          mkdir -p firmware_binaries
+          # Using basename to avoid the / in the filename
+          APP_NAME=$(basename ${{ matrix.app }})
+          cp ${{ matrix.app }}/.pio/build/*/firmware.bin firmware_binaries/${APP_NAME}.bin
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Changed name to avoid slashes and use the basename
+          name: firmware-${{ strategy.job-index }}
+          path: firmware_binaries/*.bin
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          # This will download ALL artifacts starting with 'firmware-' 
+          # into a directory named 'all_firmware'
+          pattern: firmware-*
+          path: all_firmware
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: all_firmware/*.bin
