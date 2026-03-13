@@ -1,4 +1,4 @@
-# Switchs, PIR Motion Sensor, Temperature, Humidity and Air Quality sensors detection on ESP32 8266
+# Switchs, PIR Motion Sensor, Temperature, Humidity and Air Quality sensors detection and control on ESP32 8266
 
 <img src=https://github.com/user-attachments/assets/3d47ed5c-9fe3-4e8d-aee0-bf263e704503 width=320 height=390>
 
