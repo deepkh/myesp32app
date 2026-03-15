@@ -45,7 +45,6 @@ namespace MyEsp
         : cfg_(cfg)
     {
       instance_ = this;
-      prevGotIpTime_ = millis();
     }
 
     static void HandleWiFiEvent(WiFiEvent_t event /*, arduino_event_info_t info*/)
@@ -61,22 +60,29 @@ namespace MyEsp
       case WIFI_DISCONNECTED:
         WifiService::instance_->isConnected_ = 0;
 
-        // if disconnection time is over 300 seconds, than reboot. Sometimes may help ?
-        if (now - WifiService::instance_->prevGotIpTime_ > 300000)
+        // if disconnection time is over 1200 seconds, than reboot. Sometimes may help ?
+        if (WifiService::instance_->disconnectedDuration_)
         {
-          Serial.println("WiFi continous disconnected... rebooting ");
-          ESP_RESTART();
-          return;
+          if (now - WifiService::instance_->disconnectedDuration_ > 1200000)
+          {
+            Serial.println("WiFi continous disconnected... rebooting ");
+            ESP_RESTART();
+            return;
+          }
         }
 
         Serial.println("WiFi disconnected, reconnect...");
         WifiService::instance_->ledInvert();
+        if (WifiService::instance_->disconnectedDuration_ == 0)
+        {
+          WifiService::instance_->disconnectedDuration_ = now;
+        }
         WiFi.reconnect();
 
         break;
       case WIFI_GOT_IP:
         Serial.printf("WiFi is connected! IP: %s\n", WiFi.localIP().toString().c_str());
-        WifiService::instance_->prevGotIpTime_ = millis();
+        WifiService::instance_->disconnectedDuration_ = 0;
         WifiService::instance_->isConnected_ = 1;
         WifiService::instance_->ledOn();
         break;
@@ -149,7 +155,7 @@ namespace MyEsp
   public:
     int ledPinStatus = 0;
     static WifiService *instance_;
-    int prevGotIpTime_ = 0;
+    int disconnectedDuration_ = 0;
     int isConnected_ = 0;
 
   private:
@@ -169,7 +175,7 @@ namespace MyEsp
     {
       client_.setPoolServerName(cfg_.ipaddr);
       client_.setTimeOffset(3600 * 8);
-      client_.setUpdateInterval(60000);
+      client_.setUpdateInterval(21600000);
       Serial.printf("NTPClient is setted!\n");
       return true;
     }
