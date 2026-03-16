@@ -13,6 +13,7 @@ struct WifiConfig {
   char ssid[64];
   char password[64];
   int ledpin;
+  int reboot_secs;
 };
 struct WebServerConfig {
   int enable;

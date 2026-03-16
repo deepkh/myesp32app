@@ -15,7 +15,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.name = */ "balcony_01_nodemcu",
     /*.ssid = */ ESPCONFIG_PRIVATE_WIFI_SSID,
     /*.password = */ ESPCONFIG_PRIVATE_WIFI_PASSWORD,
-    /*.ledpin = */ 2, 
+    /*.ledpin = */ 2,
+    /*.reboot_secs = */ 0, 
   },
   //.web_server_config = 
   {

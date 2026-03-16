@@ -15,7 +15,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.name = */ "mushroom_01_lamp1_fan2_irmo4",
     /*.ssid = */ ESPCONFIG_PRIVATE_WIFI_SSID,
     /*.password = */ ESPCONFIG_PRIVATE_WIFI_PASSWORD,
-    /*.ledpin = */ 8, 
+    /*.ledpin = */ 8,
+    /*.reboot_secs = */ 0, 
   },
   //.web_server_config = 
   {

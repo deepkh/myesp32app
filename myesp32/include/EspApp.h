@@ -61,9 +61,9 @@ namespace MyEsp
         WifiService::instance_->isConnected_ = 0;
 
         // if disconnection time is over 1200 seconds, than reboot. Sometimes may help ?
-        if (WifiService::instance_->disconnectedDuration_)
+        if (WifiService::instance_->cfg_.reboot_secs && WifiService::instance_->disconnectedDuration_)
         {
-          if (now - WifiService::instance_->disconnectedDuration_ > 1200000)
+          if (now - WifiService::instance_->disconnectedDuration_ >= WifiService::instance_->cfg_.reboot_secs * 1000)
           {
             Serial.println("WiFi continous disconnected... rebooting ");
             ESP_RESTART();

@@ -8,6 +8,7 @@ esp_config:
     ssid: "ESPCONFIG_PRIVATE_WIFI_SSID"
     password: "ESPCONFIG_PRIVATE_WIFI_PASSWORD"
     ledpin: 2
+    reboot_secs: 0
   web_server_config:
     enable: 1
     listening_port: 80
