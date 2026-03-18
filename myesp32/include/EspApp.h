@@ -641,6 +641,47 @@ namespace MyEsp
     unsigned long lastUpdate = 0;
   };
 
+  class Switch1
+  {
+  public:
+    explicit Switch1(const Switch1Config *cfg)
+        : cfg_(cfg)
+    {
+    }
+
+    bool setup()
+    {
+      pinMode(cfg_->pin, OUTPUT);
+      delay(10);
+      digitalWrite(cfg_->pin, cfg_->default_value);
+      return true;
+    }
+
+  private:
+    const Switch1Config *cfg_;
+  };
+
+  class Switch2 : public Switch1
+  {
+  public:
+    explicit Switch2(const Switch2Config *cfg)
+        : Switch1((const Switch1Config *)cfg) {}
+  };
+
+  class Switch3 : public Switch1
+  {
+  public:
+    explicit Switch3(const Switch3Config *cfg)
+        : Switch1((const Switch1Config *)cfg) {}
+  };
+
+  class Switch4 : public Switch1
+  {
+  public:
+    explicit Switch4(const Switch4Config *cfg)
+        : Switch1((const Switch1Config *)cfg) {}
+  };
+
   class EspApp
   {
   public:
@@ -654,7 +695,12 @@ namespace MyEsp
 
           dht_(cfg.dht_config),
           mq135_(cfg.mq135_config),
-          hcsr501_(cfg.hcsr501_config)
+          hcsr501_(cfg.hcsr501_config),
+
+          switch1_(&cfg.switch1_config),
+          switch2_(&cfg.switch2_config),
+          switch3_(&cfg.switch3_config),
+          switch4_(&cfg.switch4_config)
     {
     }
 
@@ -676,6 +722,15 @@ namespace MyEsp
       if (cfg_.mq135_config.enable && !mq135_.setup())
         return false;
       if (cfg_.hcsr501_config.enable && !hcsr501_.setup())
+        return false;
+
+      if (cfg_.switch1_config.enable && !switch1_.setup())
+        return false;
+      if (cfg_.switch2_config.enable && !switch2_.setup())
+        return false;
+      if (cfg_.switch3_config.enable && !switch3_.setup())
+        return false;
+      if (cfg_.switch4_config.enable && !switch4_.setup())
         return false;
 
       return true;
@@ -756,6 +811,12 @@ namespace MyEsp
     DhtSensor dht_;
     Mq135Sensor mq135_;
     Hchr501Sensor hcsr501_;
+
+    // Switchs
+    Switch1 switch1_;
+    Switch2 switch2_;
+    Switch3 switch3_;
+    Switch4 switch4_;
   };
 };
 

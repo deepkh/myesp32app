@@ -92,9 +92,6 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
  */
 static void handleDhtCallback(float temperature, float humidity)
 {
-  espApp.mqtt_.GetMqttClient().publish(g_espconfig.dht_config.mqtt_temperature_set, String(temperature).c_str(), true);
-  espApp.mqtt_.GetMqttClient().publish(g_espconfig.dht_config.mqtt_humidity_set, String(humidity).c_str(), true);
-  // Serial.printf("HI %f %f\n", temperature, humidity);
 }
 
 /**
@@ -102,8 +99,6 @@ static void handleDhtCallback(float temperature, float humidity)
  */
 static void handleMq135Callback(float value)
 {
-  espApp.mqtt_.GetMqttClient().publish(g_espconfig.mq135_config.mqtt_set, String(value).c_str(), true);
-  // Serial.printf("mq135 %f \n", value);
 }
 
 /**
@@ -197,15 +192,6 @@ void setup()
   Serial.begin(115200);
   delay(10);
   Serial.println('\n');
-
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(g_espconfig.switch2_config.pin, OUTPUT);
-  pinMode(g_espconfig.switch3_config.pin, OUTPUT);
-
-  // set default switchs value
-  delay(10);
-  digitalWrite(g_espconfig.switch2_config.pin, g_espconfig.switch2_config.default_value);
-  digitalWrite(g_espconfig.switch3_config.pin, g_espconfig.switch2_config.default_value);
 
   if (g_espconfig.switch2_config.default_value)
   {

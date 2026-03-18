@@ -197,15 +197,6 @@ void setup()
   delay(10);
   Serial.println('\n');
 
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(g_espconfig.switch1_config.pin, OUTPUT);
-  pinMode(g_espconfig.switch2_config.pin, OUTPUT);
-
-  // set default switchs value
-  delay(10);
-  digitalWrite(g_espconfig.switch1_config.pin, g_espconfig.switch1_config.default_value);
-  digitalWrite(g_espconfig.switch2_config.pin, g_espconfig.switch2_config.default_value);
-
   if (g_espconfig.switch1_config.default_value)
   {
     lastPirTriggered = millis();
