@@ -4,7 +4,7 @@ set -e
 
 # Function to check parameters
 CheckParams() {
-    local allowed=("generate" "clean" "clean_all" "build" "clean_build" ) 
+    local allowed=("generate" "clean" "clean_all" "build" "clean_build" "fw_update" ) 
     local found=false
 
     # Loop through all script arguments
@@ -58,6 +58,14 @@ build() {
 clean_build() {
   clean
   pio run -e myesp32app 
+}
+
+fw_update() {
+  local path="$1"
+  local name=$(basename "$path")
+  echo "fw_update '$path' '$name'"
+
+  python3 ../../scripts/OTAFirmwareUpdate.py http://$name/ota/upload $path/firmware.bin
 }
 
 for app_dir in "${APPS_DIR}"/*; do
