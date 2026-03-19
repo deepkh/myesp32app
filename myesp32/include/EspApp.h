@@ -10,6 +10,7 @@
 #pragma once
 #include "EspConfig.h"
 #include "EspConfigPrivate.h"
+#include <Preferences.h>
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -47,13 +48,68 @@ namespace MyEsp
       instance_ = this;
     }
 
+    /**
+     * Stores the SSID and Password into a namespace called "wifi-config"
+     */
+    void StorePermanetlyConfig(const String &ssid, const String &password)
+    {
+      //
+      // Only store ssid, password permanetly when the FW is NOT built by server
+      //
+      if (strcmp(ESPCONFIG_PRIVATE_WIFI_SSID, "SSID") != 0 &&
+          strcmp(ESPCONFIG_PRIVATE_WIFI_PASSWORD, "PASSWORD") != 0)
+      {
+        preferences_.begin("wifi-config", false);
+
+        preferences_.putString("ssid", ssid.c_str());
+        preferences_.putString("password", password.c_str());
+
+        // Close the preferences
+        preferences_.end();
+        Serial.printf("*** Wifi Config Saved Permanently. '%s' '%s' \n"
+            , ssid.c_str(), password.c_str());
+      } else {
+        Serial.printf("*** Wifi Config WITHOUT Saved Permanently. '%s' \n"
+            , ssid.c_str(), password.c_str());
+      }
+    }
+
+    /**
+     * Loads the SSID and Password from NVS memory
+     */
+    void LoadPermanetlyConfig(String &ssid, String &password)
+    {
+      //
+      // Only load from PermanetlyConfig when the FW is built by server
+      //
+      if (strcmp(ESPCONFIG_PRIVATE_WIFI_SSID, "SSID") == 0 &&
+          strcmp(ESPCONFIG_PRIVATE_WIFI_PASSWORD, "PASSWORD") == 0)
+      {
+        // Open the "wifi-config" namespace in read-only mode (true)
+        preferences_.begin("wifi-config", true);
+
+        // Get the values, providing a default empty string if they don't exist
+        ssid = preferences_.getString("ssid", cfg_.ssid);
+        password = preferences_.getString("password", cfg_.password);
+
+        preferences_.end();
+
+        Serial.printf("*** Wifi Config Load Permanently. '%s' '%s' \n"
+            , ssid.c_str(), password.c_str());
+
+      } else {
+        ssid = cfg_.ssid;
+        password = cfg_.password;
+
+        Serial.printf("*** Wifi Config Load WITHOUT Permanently. '%s' '%s' \n"
+            , ssid.c_str(), password.c_str());
+      }
+    }
+
     static void HandleWiFiEvent(WiFiEvent_t event /*, arduino_event_info_t info*/)
     {
       Serial.printf("WiFi event %d ip %s\n", event, WiFi.localIP().toString().c_str());
-#if 0
 
-        Serial.printf("Disconnected. Reason: %d\n", info.wifi_sta_disconnected.reason);
-#endif
       unsigned long now = millis();
       switch (event)
       {
@@ -115,6 +171,8 @@ namespace MyEsp
 
     bool setup()
     {
+      String ssid;
+      String password;
       pinMode(cfg_.ledpin, OUTPUT);
       ledOff();
 
@@ -126,7 +184,8 @@ namespace MyEsp
       WiFi.onEvent(HandleWiFiEvent);
 
       WiFi.mode(WIFI_STA);
-      WiFi.begin(cfg_.ssid, cfg_.password);
+      LoadPermanetlyConfig(ssid, password);
+      WiFi.begin(ssid.c_str(), password.c_str());
 
       delay(5000);
 
@@ -145,6 +204,7 @@ namespace MyEsp
         Serial.printf("WiFi.status() :%d\n", (int)WiFi.status());
       }
 
+      StorePermanetlyConfig(ssid, password);
       isConnected_ = true;
       return true;
     }
@@ -159,7 +219,10 @@ namespace MyEsp
     int isConnected_ = 0;
 
   private:
+    String ssid_;
+    String passowrd_;
     const WifiConfig &cfg_;
+    Preferences preferences_;
   };
 
   class NtpClientService
@@ -306,6 +369,69 @@ namespace MyEsp
       MqttService::instance_ = this;
     }
 
+    /**
+     * Stores the SSID and Password into a namespace called "wifi-config"
+     */
+    void StorePermanetlyConfig(const String &ipaddr, const String &account, const String &password)
+    {
+      //
+      // Only store ssid, password permanetly when the FW is NOT built by server
+      //
+      if (strcmp(ESPCONFIG_PRIVATE_MQTT_BROKER_IPADDR, "0.0.0.0") != 0)
+      {
+        preferences_.begin("mqtt-config", false);
+        preferences_.putString("mqtt_ipaddr", ipaddr.c_str());
+        preferences_.putString("mqtt_account", account.c_str());
+        preferences_.putString("mqtt_password", password.c_str());
+
+        // Close the preferences
+        preferences_.end();
+        Serial.printf("*** Mqtt Config Saved Permanently. '%s' '%s' '%s'\n"
+            , ipaddr.c_str(), account.c_str(), password.c_str());
+      } else {
+        Serial.printf("*** Mqtt Config WITHOUT Saved Permanently.  '%s' '%s' '%s'\n"
+            , ipaddr.c_str(), account.c_str(), password.c_str());
+      }
+    }
+
+    /**
+     * Loads the SSID and Password from NVS memory
+     */
+    void LoadPermanetlyConfig(String &ipaddr, String &account, String &password)
+    {
+      //
+      // Only load from PermanetlyConfig when the FW is built by server
+      //
+      if (strcmp(ESPCONFIG_PRIVATE_MQTT_BROKER_IPADDR, "0.0.0.0") == 0)
+      {
+        // Open the "wifi-config" namespace in read-only mode (true)
+        preferences_.begin("mqtt-config", true);
+
+        // Get the values, providing a default empty string if they don't exist
+        ipaddr = preferences_.getString("mqtt_ipaddr", cfg_.ipaddr);
+        account = preferences_.getString("mqtt_account", cfg_.account);
+        password = preferences_.getString("mqtt_password", cfg_.password);
+
+        Serial.printf("*** Mqtt Config Load from PermanetlyConfig: '%s' '%s' '%s'  \n"
+          , ipaddr.c_str()
+          , account.c_str()
+          , password.c_str()
+        );
+
+        preferences_.end();
+      } else {
+        ipaddr = cfg_.ipaddr;
+        account = cfg_.account;
+        password = cfg_.password;
+
+        Serial.printf("*** Mqtt Config Load WITHOUT from PermanetlyConfig: '%s' '%s' '%s'  \n"
+          , ipaddr.c_str()
+          , account.c_str()
+          , password.c_str()
+        );
+      }
+    }
+
     void RegisterMqttSwitchSets(const char **mqttSwitchSets, const char **mqttSwitchStates, const MqttSwitchHandler mqttSwitchHandler, int mqttSwitchSetsLen)
     {
       mqttSwitchSets_ = mqttSwitchSets;
@@ -321,7 +447,8 @@ namespace MyEsp
 
     bool setup()
     {
-      client_.setServer(cfg_.ipaddr, 1883);
+      LoadPermanetlyConfig(ipaddr_, account_, password_);
+      client_.setServer(ipaddr_.c_str(), 1883);
       return true;
     }
 
@@ -373,6 +500,7 @@ namespace MyEsp
     {
       // Loop until we're reconnected
       int failedCount = 0;
+      
       while (!client_.connected())
       {
         Serial.print("Attempting MQTT connection...");
@@ -380,10 +508,11 @@ namespace MyEsp
         String clientId = cfg_.name;
         clientId += String(random(0xffff), HEX);
         // Attempt to connect
-        if (client_.connect(clientId.c_str(), cfg_.account, cfg_.password))
+        if (client_.connect(clientId.c_str(), account_.c_str(), password_.c_str()))
         {
           Serial.println("connected");
           EspHandleMqttConnected();
+          StorePermanetlyConfig(ipaddr_, account_, password_);
           failedCount = 0;
         }
         else
@@ -423,6 +552,9 @@ namespace MyEsp
     const MqttBrokerConfig &cfg_;
     WiFiClient wifi_;
     PubSubClient client_;
+    String ipaddr_;
+    String account_;
+    String password_;
 
   public:
     MqttConnectedCallback mqttConnectedCallback_ = nullptr;
@@ -430,6 +562,7 @@ namespace MyEsp
     const char **mqttSwitchStates_ = nullptr;
     MqttSwitchHandler mqttSwitchHandler_ = nullptr;
     int mqttSwitchSetsLen_ = 0;
+    Preferences preferences_;
   };
 
   class DhtSensor
