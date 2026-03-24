@@ -2,8 +2,6 @@
 #include "EspApp.h"
 #include "EspConfig.h"
 
-bool initalSucceeded = false;
-
 const char *mqttSwtichSet[] = {
     g_espconfig.switch1_config.mqtt_set,
 };
@@ -90,16 +88,10 @@ void setup()
     return;
   }
 
-  initalSucceeded = true;
 }
 
 void loop()
 {
-  if (!initalSucceeded)
-  {
-    return;
-  }
-
   unsigned long now = millis();
   espApp.loop(now);
 }

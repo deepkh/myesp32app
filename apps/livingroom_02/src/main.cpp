@@ -10,8 +10,6 @@
 #include "EspApp.h"
 #include "EspConfig.h"
 
-static bool initalSucceeded = false;
-
 static const char *mqttSwtichSet[] = {
     g_espconfig.switch1_config.mqtt_set,
     g_espconfig.switch2_config.mqtt_set,
@@ -111,17 +109,10 @@ void setup()
     Serial.printf("failed to esp.Begin()\n");
     return;
   }
-
-  initalSucceeded = true;
 }
 
 void loop()
 {
-  if (!initalSucceeded)
-  {
-    return;
-  }
-
   now = millis();
   espApp.loop(now);
 }

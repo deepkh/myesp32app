@@ -23,8 +23,8 @@
 #include <esp_wifi.h>
 #define WIFI_DISCONNECTED ARDUINO_EVENT_WIFI_STA_DISCONNECTED
 #define WIFI_GOT_IP ARDUINO_EVENT_WIFI_STA_GOT_IP
+#define WIFI_LOST_IP ARDUINO_EVENT_WIFI_STA_LOST_IP
 #define ESP_RESTART esp_restart
-
 #endif
 
 #include <WiFiUdp.h>
@@ -46,6 +46,9 @@ namespace MyEsp
         : cfg_(cfg)
     {
       instance_ = this;
+#if defined(ESP32)
+      wifiQueue_ = xQueueCreate(30, sizeof(WiFiEvent_t));
+#endif
     }
 
     /**
@@ -66,11 +69,11 @@ namespace MyEsp
 
         // Close the preferences
         preferences_.end();
-        Serial.printf("*** Wifi Config Saved Permanently. '%s' '%s' \n"
-            , ssid.c_str(), password.c_str());
-      } else {
-        Serial.printf("*** Wifi Config WITHOUT Saved Permanently. '%s' \n"
-            , ssid.c_str(), password.c_str());
+        Serial.printf("*** Wifi Config Saved Permanently. '%s' '%s' \n", ssid.c_str(), password.c_str());
+      }
+      else
+      {
+        Serial.printf("*** Wifi Config WITHOUT Saved Permanently. '%s' \n", ssid.c_str(), password.c_str());
       }
     }
 
@@ -94,19 +97,18 @@ namespace MyEsp
 
         preferences_.end();
 
-        Serial.printf("*** Wifi Config Load Permanently. '%s' '%s' \n"
-            , ssid.c_str(), password.c_str());
-
-      } else {
+        Serial.printf("*** Wifi Config Load Permanently. '%s' '%s' \n", ssid.c_str(), password.c_str());
+      }
+      else
+      {
         ssid = cfg_.ssid;
         password = cfg_.password;
 
-        Serial.printf("*** Wifi Config Load WITHOUT Permanently. '%s' '%s' \n"
-            , ssid.c_str(), password.c_str());
+        Serial.printf("*** Wifi Config Load WITHOUT Permanently. '%s' '%s' \n", ssid.c_str(), password.c_str());
       }
     }
 
-    static void HandleWiFiEvent(WiFiEvent_t event /*, arduino_event_info_t info*/)
+    void HandleWiFiEvent(WiFiEvent_t event /*, arduino_event_info_t info*/)
     {
       Serial.printf("WiFi event %d ip %s\n", event, WiFi.localIP().toString().c_str());
 
@@ -114,12 +116,17 @@ namespace MyEsp
       switch (event)
       {
       case WIFI_DISCONNECTED:
-        WifiService::instance_->isConnected_ = 0;
+        if (disconnectedStart_ == 0)
+        {
+          disconnectedStart_ = now;
+        }
+        isConnected_ = 0;
+        delay(500);
 
         // if disconnection time is over 1200 seconds, than reboot. Sometimes may help ?
-        if (WifiService::instance_->cfg_.reboot_secs && WifiService::instance_->disconnectedDuration_)
+        if (cfg_.reboot_secs && disconnectedDuration_)
         {
-          if (now - WifiService::instance_->disconnectedDuration_ >= WifiService::instance_->cfg_.reboot_secs * 1000)
+          if (now - disconnectedDuration_ >= cfg_.reboot_secs * 1000)
           {
             Serial.println("WiFi continous disconnected... rebooting ");
             ESP_RESTART();
@@ -127,21 +134,29 @@ namespace MyEsp
           }
         }
 
-        Serial.println("WiFi disconnected, reconnect...");
-        WifiService::instance_->ledInvert();
-        if (WifiService::instance_->disconnectedDuration_ == 0)
+        Serial.printf("WiFi disconnected, reconnect ... Elapsed Secs: %d\n", (now - disconnectedStart_) / 1000);
+        ledInvert();
+        if (disconnectedDuration_ == 0)
         {
-          WifiService::instance_->disconnectedDuration_ = now;
+          disconnectedDuration_ = now;
         }
-        WiFi.reconnect();
 
         break;
       case WIFI_GOT_IP:
-        Serial.printf("WiFi is connected! IP: %s\n", WiFi.localIP().toString().c_str());
-        WifiService::instance_->disconnectedDuration_ = 0;
-        WifiService::instance_->isConnected_ = 1;
-        WifiService::instance_->ledOn();
+        Serial.printf("WiFi is connected! IP: %s. Elapsed Secs: %d\n", WiFi.localIP().toString().c_str(), (now - disconnectedStart_) / 1000);
+        disconnectedDuration_ = 0;
+        isConnected_ = 1;
+        disconnectedStart_ = 0;
+        StorePermanetlyConfig(ssid_, passowrd_);
+        ledOn();
         break;
+#if defined(ESP32)
+      case WIFI_LOST_IP:
+        Serial.println("Lost IP → force reconnect");
+        isConnected_ = 0;
+        ESP_RESTART();
+        break;
+#endif
       }
     }
 
@@ -171,53 +186,51 @@ namespace MyEsp
 
     bool setup()
     {
-      String ssid;
-      String password;
       pinMode(cfg_.ledpin, OUTPUT);
       ledOff();
-
-      delay(5000);
 
       WiFi.hostname(cfg_.name);
       WiFi.setAutoReconnect(true);
       WiFi.persistent(true); // save credentials in flash
-      WiFi.onEvent(HandleWiFiEvent);
+#if defined(ESP8266)
+      WiFi.onEvent([](WiFiEvent_t cbEvent)
+                   { WifiService::instance_->HandleWiFiEvent(cbEvent); });
+#elif defined(ESP32)
+      WiFi.onEvent([](WiFiEvent_t cbEvent)
+                   { xQueueSend(WifiService::instance_->wifiQueue_, &cbEvent, 0); });
 
-      WiFi.mode(WIFI_STA);
-      LoadPermanetlyConfig(ssid, password);
-      WiFi.begin(ssid.c_str(), password.c_str());
-
-      delay(5000);
-
-      unsigned long start = millis();
-      while (WiFi.status() != WL_CONNECTED)
-      {
-        ledInvert();
-        delay(500);
-#if 0
-      if (millis() - start > 60000)
-      {
-        Serial.printf("WiFi.status() :%d connection timeout!\n", (int)WiFi.status());
-        return false;
-      }
 #endif
-        Serial.printf("WiFi.status() :%d\n", (int)WiFi.status());
-      }
+      WiFi.mode(WIFI_STA);
+      LoadPermanetlyConfig(ssid_, passowrd_);
+      WiFi.begin(ssid_.c_str(), passowrd_.c_str());
 
-      StorePermanetlyConfig(ssid, password);
-      isConnected_ = true;
+      disconnectedStart_ = millis();
+      delay(5000);
       return true;
     }
 
     bool begin() { return true; }
-    bool loop(unsigned long now) { return true; }
+    bool loop(unsigned long now)
+    {
+#if defined(ESP32)
+      WiFiEvent_t event;
+      while (xQueueReceive(wifiQueue_, &event, 0) == pdTRUE)
+      {
+        HandleWiFiEvent(event);
+      }
+#endif
+      return true;
+    }
 
   public:
     int ledPinStatus = 0;
     static WifiService *instance_;
     int disconnectedDuration_ = 0;
     int isConnected_ = 0;
-
+    unsigned long disconnectedStart_ = 0;
+#if defined(ESP32)
+    QueueHandle_t wifiQueue_ = nullptr;
+#endif
   private:
     String ssid_;
     String passowrd_;
@@ -386,11 +399,11 @@ namespace MyEsp
 
         // Close the preferences
         preferences_.end();
-        Serial.printf("*** Mqtt Config Saved Permanently. '%s' '%s' '%s'\n"
-            , ipaddr.c_str(), account.c_str(), password.c_str());
-      } else {
-        Serial.printf("*** Mqtt Config WITHOUT Saved Permanently.  '%s' '%s' '%s'\n"
-            , ipaddr.c_str(), account.c_str(), password.c_str());
+        Serial.printf("*** Mqtt Config Saved Permanently. '%s' '%s' '%s'\n", ipaddr.c_str(), account.c_str(), password.c_str());
+      }
+      else
+      {
+        Serial.printf("*** Mqtt Config WITHOUT Saved Permanently.  '%s' '%s' '%s'\n", ipaddr.c_str(), account.c_str(), password.c_str());
       }
     }
 
@@ -412,23 +425,17 @@ namespace MyEsp
         account = preferences_.getString("mqtt_account", cfg_.account);
         password = preferences_.getString("mqtt_password", cfg_.password);
 
-        Serial.printf("*** Mqtt Config Load from PermanetlyConfig: '%s' '%s' '%s'  \n"
-          , ipaddr.c_str()
-          , account.c_str()
-          , password.c_str()
-        );
+        Serial.printf("*** Mqtt Config Load from PermanetlyConfig: '%s' '%s' '%s'  \n", ipaddr.c_str(), account.c_str(), password.c_str());
 
         preferences_.end();
-      } else {
+      }
+      else
+      {
         ipaddr = cfg_.ipaddr;
         account = cfg_.account;
         password = cfg_.password;
 
-        Serial.printf("*** Mqtt Config Load WITHOUT from PermanetlyConfig: '%s' '%s' '%s'  \n"
-          , ipaddr.c_str()
-          , account.c_str()
-          , password.c_str()
-        );
+        Serial.printf("*** Mqtt Config Load WITHOUT from PermanetlyConfig: '%s' '%s' '%s'  \n", ipaddr.c_str(), account.c_str(), password.c_str());
       }
     }
 
@@ -498,10 +505,12 @@ namespace MyEsp
 
     void doConnect()
     {
-      // Loop until we're reconnected
-      int failedCount = 0;
-      
-      while (!client_.connected())
+      if (WifiService::instance_->isConnected_ == 0)
+      {
+        return;
+      }
+
+      if (!client_.connected())
       {
         Serial.print("Attempting MQTT connection...");
         // Create a random client ID
@@ -513,22 +522,16 @@ namespace MyEsp
           Serial.println("connected");
           EspHandleMqttConnected();
           StorePermanetlyConfig(ipaddr_, account_, password_);
-          failedCount = 0;
+          failedCount_ = 0;
         }
         else
         {
           Serial.print("failed, rc=");
           Serial.print(client_.state());
-          Serial.printf(" try again in 5 seconds. failedCount :%d\n", failedCount);
+          Serial.printf(" try again in 5 seconds. failedCount :%d\n", failedCount_);
           // Wait 5 seconds before retrying
-          delay(5000);
-
-          if (failedCount >= 60)
-          {
-            Serial.printf(" failed count too much :%d reboot \n", failedCount);
-            ESP_RESTART();
-          }
-          failedCount++;
+          delay(500);
+          failedCount_++;
         }
       }
     }
@@ -563,6 +566,7 @@ namespace MyEsp
     MqttSwitchHandler mqttSwitchHandler_ = nullptr;
     int mqttSwitchSetsLen_ = 0;
     Preferences preferences_;
+    int failedCount_ = 0;
   };
 
   class DhtSensor
