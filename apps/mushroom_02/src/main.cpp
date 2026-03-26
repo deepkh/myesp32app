@@ -15,6 +15,7 @@ static int mqttSwitchCallbackCounter[] = {
 
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
 {
+  int status = strcmp(msg, "ON") == 0;
   Serial.printf("mqttSwitchHandler %d '%s' -> '%s'\n", index, topic, msg);
 
   // Sync up in the initial stage
@@ -23,8 +24,8 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "ON" : "OFF");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "ON" : "OFF");
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "OFF" : "ON");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "OFF" : "ON");
       break;
     }
   }
@@ -33,7 +34,7 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch1_config.pin, strcmp(msg, "ON") == 0 ? HIGH : LOW);
+      digitalWrite(g_espconfig.switch1_config.pin, status ? LOW : HIGH);
       break;
     }
   }

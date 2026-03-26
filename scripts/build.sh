@@ -65,6 +65,8 @@ fw_update() {
   local name=$(basename "$path")
   echo "fw_update '$path' '$name'"
 
+  set +e
+
   python3 ../../scripts/OTAFirmwareUpdate.py http://$name/ota/upload $path/firmware.bin
 }
 
