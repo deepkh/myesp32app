@@ -48,7 +48,7 @@ esp_config:
     mqtt_set: "home/livingroom/fan1/set"
     mqtt_status: "home/livingroom/fan1/status"
     pin: 4
-    default_value: 1
+    default_value: 0
   switch2_config:
     enable: 0
     mqtt_set: "home/mushroom/switch_lamp/set"
