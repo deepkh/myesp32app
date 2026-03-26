@@ -154,7 +154,7 @@ namespace MyEsp
       case WIFI_LOST_IP:
         Serial.println("Lost IP → force reconnect");
         isConnected_ = 0;
-        ESP_RESTART();
+        WiFi.reconnect();
         break;
 #endif
       }
