@@ -48,7 +48,7 @@ esp_config:
     mqtt_set: "home/livingroom/lamp2/set"
     mqtt_status: "home/livingroom/lamp2/status"
     pin: 2
-    default_value: 1
+    default_value: 0
   switch2_config:
     enable: 1
     mqtt_set: "home/livingroom/lamp3/set"

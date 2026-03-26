@@ -72,7 +72,7 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/livingroom/lamp2/set",
     /*.mqtt_status = */ "home/livingroom/lamp2/status",
     /*.pin = */ 2,
-    /*.default_value = */ 1, 
+    /*.default_value = */ 0, 
   },
   //.switch2_config = 
   {
