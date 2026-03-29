@@ -819,11 +819,55 @@ namespace MyEsp
         : Switch1((const Switch1Config *)cfg) {}
   };
 
+  class SimpleWatchDog
+  {
+  public:
+    explicit SimpleWatchDog()
+    {
+    }
+
+    bool setup()
+    {
+      return true;
+    }
+
+    bool begin()
+    {
+      return true;
+    }
+
+    bool loop(unsigned long now)
+    {
+      if (!MyEsp::WifiService::instance_->isConnected_)
+      {
+        if (lastDisconnectedTime_ == 0)
+        {
+          Serial.printf("WDT: WiFI is disconnected! %p %p %u %u \n", this, &lastDisconnectedTime_, lastDisconnectedTime_, now);
+          lastDisconnectedTime_ = now;
+        }
+
+        if ((now - lastDisconnectedTime_) > 10000)
+        {
+          Serial.printf("WDT:  WiFI recovery timeout! Reboot! \n");
+          ESP_RESTART();
+        }
+        return true;
+      }
+
+      lastDisconnectedTime_ = 0;
+      return true;
+    }
+
+  private:
+    unsigned long lastDisconnectedTime_ = 0;
+  };
+
   class EspApp
   {
   public:
     explicit EspApp(const EspConfig &cfg)
         : cfg_(cfg),
+          wdt_(),
           wifi_(cfg.wifi_config),
           ntp_(cfg.ntp_client_config),
           web_(cfg.web_server_config),
@@ -897,6 +941,7 @@ namespace MyEsp
     }
     bool loop(unsigned long now)
     {
+      wdt_.loop(now);
       if (cfg_.wifi_config.enable)
       {
         wifi_.loop(now);
@@ -935,6 +980,7 @@ namespace MyEsp
 
   private:
     const EspConfig &cfg_;
+    SimpleWatchDog wdt_;
 
   public:
     // Services
