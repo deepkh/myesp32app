@@ -27,6 +27,13 @@ static int mqttSwitchCallbackCounter[] = {
 
 static unsigned long now = 0;
 
+static int pirCurrStatus = -1;
+static int pirPrevStatus = -1;
+static unsigned long lastPirTriggered = 0;
+
+static int lampPrevStatus = -1;
+static unsigned long lastLampTriggered = 0;
+
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
 {
   int status = strcmp(msg, "ON") == 0;
@@ -68,6 +75,9 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
  */
 static void handleDhtCallback(float temperature, float humidity)
 {
+  espApp.mqtt_.GetMqttClient().publish(g_espconfig.dht_config.mqtt_temperature_set, String(temperature).c_str(), true);
+  espApp.mqtt_.GetMqttClient().publish(g_espconfig.dht_config.mqtt_humidity_set, String(humidity).c_str(), true);
+  Serial.printf("HI %f %f\n", temperature, humidity);
 }
 
 /**
@@ -82,6 +92,62 @@ static void handleMq135Callback(float value)
  */
 static void handleHchr501Callback(int status)
 {
+  pirCurrStatus = status;
+  //static int c = 0;
+  //Serial.printf("pirCurrStatus %d  %d\n", pirCurrStatus, c++);
+}
+
+static void handlePirStatus(unsigned int now, int status)
+{
+  if (pirPrevStatus == 0 && status == 0)
+  {
+  }
+  else if (pirPrevStatus == 0 && status == 1)
+  {
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.hcsr501_config.mqtt_set, "ON");
+    Serial.printf("PIR on %d '%s'\n", status, g_espconfig.hcsr501_config.mqtt_set);
+
+    pirPrevStatus = status;
+    lastPirTriggered = now;
+  }
+  else if (pirPrevStatus == 1 && status == 0)
+  {
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.hcsr501_config.mqtt_set, "OFF");
+    Serial.printf("PIR off %d '%s'\n", status, g_espconfig.hcsr501_config.mqtt_set);
+
+    pirPrevStatus = status;
+  }
+  else if (pirPrevStatus == 1 && status == 1)
+  {
+    lastPirTriggered = now;
+  }
+}
+
+static void handleLampStatus(unsigned int now, int status)
+{
+  if (lampPrevStatus == 0 && status == 0)
+  {
+  }
+  else if (lampPrevStatus == 0 && status == 1)
+  {
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "ON");
+    lampPrevStatus = status;
+    lastLampTriggered = now;
+  }
+  else if (lampPrevStatus == 1 && status == 0)
+  {
+    // Turn lamp off after 300 seconds
+    if ((now - lastLampTriggered) < 300000)
+    {
+      return;
+    }
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "OFF");
+    lampPrevStatus = status;
+  }
+  else if (lampPrevStatus == 1 && status == 1)
+  {
+    lastLampTriggered = now;
+  }
 }
 
 void setup()
@@ -98,11 +164,23 @@ void setup()
     return;
   }
 
+#if 0
+  if (g_espconfig.switch2_config.default_value)
+  {
+    lastPirTriggered = millis();
+    lastLampTriggered = lastPirTriggered;
+  }
+#endif
+
+  pirCurrStatus = 0;//g_espconfig.switch2_config.default_value;
+  pirPrevStatus = pirCurrStatus;
+  lampPrevStatus = pirCurrStatus;
+
   espApp.mqtt_.RegisterMqttSwitchSets(mqttSwtichSet, mqttSwtichStates, mqttSwitchHandler, mqttSwtichLen);
   // esp.RegisterMqttConnectedCallback(handleMqttConnected);
-  // espApp.dht_.RegisterDhtCallback(handleDhtCallback);
+  espApp.dht_.RegisterDhtCallback(handleDhtCallback);
   // espApp.mq135_.RegisterMq135Callback(handleMq135Callback);
-  // espApp.hcsr501_.RegisterHchr501Callback(handleHchr501Callback);
+  espApp.hcsr501_.RegisterHchr501Callback(handleHchr501Callback);
 
   if (!espApp.begin())
   {
@@ -115,4 +193,12 @@ void loop()
 {
   now = millis();
   espApp.loop(now);
+
+  if (MyEsp::WifiService::instance_->isConnected_)
+  {
+    //static int c = 0;
+    //Serial.printf("GGGGGG %d\n", c++);
+    handlePirStatus(now, pirCurrStatus);
+    // handleLampStatus(now, pirCurrStatus);
+  }
 }

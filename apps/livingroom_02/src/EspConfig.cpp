@@ -43,11 +43,11 @@ const MyEsp::EspConfig g_espconfig = {
   //.dht_config = 
   {
     /*.describe = */ "Temp & Humidity",
-    /*.enable = */ 0,
+    /*.enable = */ 1,
     /*.dht_type = */ 22,
-    /*.pin = */ 14,
-    /*.mqtt_temperature_set = */ "home/mushroom/dht/temperature/set",
-    /*.mqtt_humidity_set = */ "home/mushroom/dht/humidity/set",
+    /*.pin = */ 1,
+    /*.mqtt_temperature_set = */ "home/livingroom/dht/temperature/set",
+    /*.mqtt_humidity_set = */ "home/livingroom/dht/humidity/set",
     /*.update_interval = */ 5000, 
   },
   //.mq135_config = 
@@ -61,9 +61,9 @@ const MyEsp::EspConfig g_espconfig = {
   //.hcsr501_config = 
   {
     /*.describe = */ "Ir Motion Detector",
-    /*.enable = */ 0,
-    /*.pin = */ 4,
-    /*.mqtt_set = */ "home/mushroom/hcsr501/set",
+    /*.enable = */ 1,
+    /*.pin = */ 0,
+    /*.mqtt_set = */ "home/livingroom/hcsr501/set",
     /*.update_interval = */ 200, 
   },
   //.switch1_config = 

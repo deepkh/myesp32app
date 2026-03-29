@@ -169,8 +169,8 @@ static void handleFanStatus(unsigned int now, int status)
   }
   else if (fanPrevStatus == 1 && status == 0)
   {
-    // Turn fan off after 10800 seconds
-    if ((now - lastFanTriggered) < 10800000)
+    // Turn fan off after 25200 seconds
+    if ((now - lastFanTriggered) < 25200000)
     {
       return;
     }
