@@ -10,8 +10,6 @@
 #include "EspApp.h"
 #include "EspConfig.h"
 
-Preferences preferences;
-
 static const char *mqttSwtichSet[] = {
     g_espconfig.switch1_config.mqtt_set,
     g_espconfig.switch2_config.mqtt_set,
@@ -38,6 +36,7 @@ static unsigned long lastLampTriggered = 0;
 
 static int lamp2PrevStatus = -1;
 
+Preferences preferences;
 static bool hasRestoreFromPermanetlyConfig = false;
 
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
@@ -53,10 +52,12 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     case 0:
       Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "OFF" : "ON");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "OFF" : "ON");
+      digitalWrite(g_espconfig.switch1_config.pin, lampPrevStatus ? LOW : HIGH);
       break;
     case 1:
       Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, lamp2PrevStatus ? "ON" : "OFF");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, lamp2PrevStatus ? "ON" : "OFF");
+      digitalWrite(g_espconfig.switch2_config.pin, lamp2PrevStatus ? HIGH : LOW);
       break;
     }
   }

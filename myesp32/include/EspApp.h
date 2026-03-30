@@ -854,7 +854,7 @@ namespace MyEsp
           lastDisconnectedTime_ = now;
         }
 
-        if ((now - lastDisconnectedTime_) > 10000)
+        if ((now - lastDisconnectedTime_) > 1800000)
         {
           Serial.printf("WDT:  WiFI recovery timeout! Reboot! \n");
           if (wdtTimeoutCallback_) {
