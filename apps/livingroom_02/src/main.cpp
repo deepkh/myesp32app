@@ -10,6 +10,8 @@
 #include "EspApp.h"
 #include "EspConfig.h"
 
+Preferences preferences;
+
 static const char *mqttSwtichSet[] = {
     g_espconfig.switch1_config.mqtt_set,
     g_espconfig.switch2_config.mqtt_set,
@@ -34,6 +36,10 @@ static unsigned long lastPirTriggered = 0;
 static int lampPrevStatus = -1;
 static unsigned long lastLampTriggered = 0;
 
+static int lamp2PrevStatus = -1;
+
+static bool hasRestoreFromPermanetlyConfig = false;
+
 static void mqttSwitchHandler(unsigned int index, const char *topic, const char *msg)
 {
   int status = strcmp(msg, "ON") == 0;
@@ -45,12 +51,12 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "OFF" : "ON");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "OFF" : "ON");
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "OFF" : "ON");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "OFF" : "ON");
       break;
     case 1:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, g_espconfig.switch2_config.default_value ? "ON" : "OFF");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, g_espconfig.switch2_config.default_value ? "ON" : "OFF");
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, lamp2PrevStatus ? "ON" : "OFF");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, lamp2PrevStatus ? "ON" : "OFF");
       break;
     }
   }
@@ -60,9 +66,11 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     {
     case 0:
       digitalWrite(g_espconfig.switch1_config.pin, status ? LOW : HIGH);
+      lampPrevStatus = status ? 0 : 1;
       break;
     case 1:
       digitalWrite(g_espconfig.switch2_config.pin, status ? HIGH : LOW);
+      lamp2PrevStatus = status;
       break;
     }
   }
@@ -93,8 +101,8 @@ static void handleMq135Callback(float value)
 static void handleHchr501Callback(int status)
 {
   pirCurrStatus = status;
-  //static int c = 0;
-  //Serial.printf("pirCurrStatus %d  %d\n", pirCurrStatus, c++);
+  // static int c = 0;
+  // Serial.printf("pirCurrStatus %d  %d\n", pirCurrStatus, c++);
 }
 
 static void handlePirStatus(unsigned int now, int status)
@@ -123,6 +131,7 @@ static void handlePirStatus(unsigned int now, int status)
   }
 }
 
+#if 0
 static void handleLampStatus(unsigned int now, int status)
 {
   if (lampPrevStatus == 0 && status == 0)
@@ -149,6 +158,59 @@ static void handleLampStatus(unsigned int now, int status)
     lastLampTriggered = now;
   }
 }
+#endif
+
+static void storePermanetlyConfig()
+{
+  if (hasRestoreFromPermanetlyConfig)
+  {
+    Serial.printf("=== main: %s stored: SKIPED (sould be clear before store): pirCurrStatus:%u pirPrevStatus:%u lampPrevStatus:%u lamp2PrevStatus:%u \n", __func__, pirCurrStatus, pirPrevStatus, lampPrevStatus, lamp2PrevStatus);
+    return;
+  }
+  preferences.begin("main_cfg", false);
+  preferences.putULong("stroed", 1);
+  preferences.putULong("pirCurrStatus", pirCurrStatus);
+  preferences.putULong("pirPrevStatus", pirPrevStatus);
+  preferences.putULong("lampPrevStatus", lampPrevStatus);
+  preferences.putULong("lamp2PrevStatus", lamp2PrevStatus);
+  preferences.end();
+  Serial.printf("=== main: %s stored: pirCurrStatus:%u pirPrevStatus:%u lampPrevStatus:%u lamp2PrevStatus:%u \n", __func__, pirCurrStatus, pirPrevStatus, lampPrevStatus, lamp2PrevStatus);
+}
+
+static void restorePermanetlyConfig()
+{
+  preferences.begin("main_cfg", true);
+  uint32_t stroed = preferences.getULong("stroed", 0);
+  if (!stroed)
+  {
+    Serial.printf("=== main: %s no need to restore PermanetlyConfig.\n", __func__);
+  }
+  else
+  {
+    hasRestoreFromPermanetlyConfig = true;
+    pirCurrStatus = preferences.getULong("pirCurrStatus", pirCurrStatus);
+    pirPrevStatus = preferences.getULong("pirPrevStatus", pirPrevStatus);
+    lampPrevStatus = preferences.getULong("lampPrevStatus", lampPrevStatus);
+    lamp2PrevStatus = preferences.getULong("lamp2PrevStatus", lamp2PrevStatus);
+    Serial.printf("=== main: %s restored: pirCurrStatus:%u pirPrevStatus:%u lampPrevStatus:%u lamp2PrevStatus:%u \n", __func__, pirCurrStatus, pirPrevStatus, lampPrevStatus, lamp2PrevStatus);
+  }
+
+  preferences.end();
+}
+
+static void clearPermanetlyConfig()
+{
+  preferences.begin("main_cfg", false);
+  preferences.putULong("stroed", 0);
+  preferences.end();
+  hasRestoreFromPermanetlyConfig = false;
+  Serial.printf("=== main: %s \n", __func__);
+}
+
+static void handleWDTTimeout()
+{
+  storePermanetlyConfig();
+}
 
 void setup()
 {
@@ -164,23 +226,25 @@ void setup()
     return;
   }
 
-#if 0
-  if (g_espconfig.switch2_config.default_value)
+  if (g_espconfig.switch1_config.default_value == 0)
   {
     lastPirTriggered = millis();
     lastLampTriggered = lastPirTriggered;
   }
-#endif
 
-  pirCurrStatus = 0;//g_espconfig.switch2_config.default_value;
+  pirCurrStatus = 0;
   pirPrevStatus = pirCurrStatus;
-  lampPrevStatus = pirCurrStatus;
+  lampPrevStatus = g_espconfig.switch1_config.default_value;
+  lamp2PrevStatus = g_espconfig.switch2_config.default_value;
+
+  restorePermanetlyConfig();
 
   espApp.mqtt_.RegisterMqttSwitchSets(mqttSwtichSet, mqttSwtichStates, mqttSwitchHandler, mqttSwtichLen);
   // esp.RegisterMqttConnectedCallback(handleMqttConnected);
   espApp.dht_.RegisterDhtCallback(handleDhtCallback);
   // espApp.mq135_.RegisterMq135Callback(handleMq135Callback);
   espApp.hcsr501_.RegisterHchr501Callback(handleHchr501Callback);
+  espApp.wdt_.RegisterWDTRebootCallback(handleWDTTimeout);
 
   if (!espApp.begin())
   {
@@ -196,8 +260,12 @@ void loop()
 
   if (MyEsp::WifiService::instance_->isConnected_)
   {
-    //static int c = 0;
-    //Serial.printf("GGGGGG %d\n", c++);
+    if (hasRestoreFromPermanetlyConfig)
+    {
+      clearPermanetlyConfig();
+    }
+    // static int c = 0;
+    // Serial.printf("GGGGGG %d\n", c++);
     handlePirStatus(now, pirCurrStatus);
     // handleLampStatus(now, pirCurrStatus);
   }

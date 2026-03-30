@@ -822,8 +822,16 @@ namespace MyEsp
   class SimpleWatchDog
   {
   public:
+
+    typedef std::function<void(void)> WDTTimeoutCallback;
+
     explicit SimpleWatchDog()
     {
+    }
+    
+      void RegisterWDTRebootCallback(const WDTTimeoutCallback wdtTimeoutCallback)
+    {
+      wdtTimeoutCallback_ = wdtTimeoutCallback;
     }
 
     bool setup()
@@ -849,6 +857,9 @@ namespace MyEsp
         if ((now - lastDisconnectedTime_) > 10000)
         {
           Serial.printf("WDT:  WiFI recovery timeout! Reboot! \n");
+          if (wdtTimeoutCallback_) {
+            wdtTimeoutCallback_();
+          }
           ESP_RESTART();
         }
         return true;
@@ -859,6 +870,7 @@ namespace MyEsp
     }
 
   private:
+    WDTTimeoutCallback wdtTimeoutCallback_ = nullptr;
     unsigned long lastDisconnectedTime_ = 0;
   };
 
@@ -867,12 +879,12 @@ namespace MyEsp
   public:
     explicit EspApp(const EspConfig &cfg)
         : cfg_(cfg),
-          wdt_(),
           wifi_(cfg.wifi_config),
           ntp_(cfg.ntp_client_config),
           web_(cfg.web_server_config),
           ota_(cfg.otp_updater_config),
           mqtt_(cfg.mqtt_broker_config),
+          wdt_(),
 
           dht_(cfg.dht_config),
           mq135_(cfg.mq135_config),
@@ -980,7 +992,6 @@ namespace MyEsp
 
   private:
     const EspConfig &cfg_;
-    SimpleWatchDog wdt_;
 
   public:
     // Services
@@ -989,6 +1000,7 @@ namespace MyEsp
     WebServerService web_;
     OtaUpdaterService ota_;
     MqttService mqtt_;
+    SimpleWatchDog wdt_;
 
     // Sensors
     DhtSensor dht_;
