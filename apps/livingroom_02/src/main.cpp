@@ -68,6 +68,12 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     case 0:
       lampPrevStatus = status;
       espApp.switch1_.writeValue(lampPrevStatus);
+      if (lampPrevStatus == 0)
+      {
+        lastLampTriggered = 0;
+      }
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "ON" : "OFF");
+
       break;
     case 1:
       lamp2PrevStatus = status;
@@ -132,10 +138,6 @@ static void handlePirStatus(unsigned int now, int status)
   }
 }
 
-// Manual        Trigger On
-//      1         
-//      0 
-
 static void handleLamp1Status(unsigned int now, int status)
 {
   if (lampPrevStatus == 0 && status == 0)
@@ -143,19 +145,19 @@ static void handleLamp1Status(unsigned int now, int status)
   }
   else if (lampPrevStatus == 0 && status == 1)
   {
-    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "ON");
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, "ON");
     lampPrevStatus = status;
     lastLampTriggered = now;
   }
   else if (lampPrevStatus == 1 && status == 0 && lastLampTriggered > 0)
   {
-    // Turn lamp off after 300 seconds
-    if ((now - lastLampTriggered) < 100000)
+    if ((now - lastLampTriggered) < 30000)
     {
       return;
     }
-    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "OFF");
+    espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, "OFF");
     lampPrevStatus = status;
+    lastLampTriggered = 0;
   }
   else if (lampPrevStatus == 1 && status == 1 && lastLampTriggered > 0)
   {
@@ -232,9 +234,9 @@ void setup()
   if (g_espconfig.switch1_config.default_value == 0)
   {
     lastPirTriggered = millis();
-    lastLampTriggered = lastPirTriggered;
   }
 
+  lastLampTriggered = 0;
   pirCurrStatus = 0;
   pirPrevStatus = pirCurrStatus;
   lampPrevStatus = g_espconfig.switch1_config.default_value;
@@ -267,9 +269,7 @@ void loop()
     {
       clearPermanetlyConfig();
     }
-    // static int c = 0;
-    // Serial.printf("GGGGGG %d\n", c++);
     handlePirStatus(now, pirCurrStatus);
-    // handleLampStatus(now, pirCurrStatus);
+    handleLamp1Status(now, pirCurrStatus);
   }
 }
