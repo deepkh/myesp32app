@@ -62,6 +62,7 @@ struct Switch1Config {
   char mqtt_status[64];
   int pin;
   int default_value;
+  int inverse;
 };
 struct Switch2Config {
   int enable;
@@ -69,6 +70,7 @@ struct Switch2Config {
   char mqtt_status[64];
   int pin;
   int default_value;
+  int inverse;
 };
 struct Switch3Config {
   int enable;
@@ -76,6 +78,7 @@ struct Switch3Config {
   char mqtt_status[64];
   int pin;
   int default_value;
+  int inverse;
 };
 struct Switch4Config {
   int enable;
@@ -83,6 +86,7 @@ struct Switch4Config {
   char mqtt_status[64];
   int pin;
   int default_value;
+  int inverse;
 };
 struct EspConfig {
   BoardConfig board_config;

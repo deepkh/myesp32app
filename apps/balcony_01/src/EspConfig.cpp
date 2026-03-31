@@ -72,7 +72,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/balcony/lamp1/set",
     /*.mqtt_status = */ "home/balcony/lamp1/status",
     /*.pin = */ 13,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
   //.switch2_config = 
   {
@@ -80,7 +81,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/balcony/lamp2/set",
     /*.mqtt_status = */ "home/balcony/lamp2/status",
     /*.pin = */ 15,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
   //.switch3_config = 
   {
@@ -88,7 +90,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/balcony/lamp3/set",
     /*.mqtt_status = */ "home/balcony/lamp3/status",
     /*.pin = */ 0,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
   //.switch4_config = 
   {
@@ -96,6 +99,7 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/balcony/lamp4/set",
     /*.mqtt_status = */ "home/balcony/lamp4/status",
     /*.pin = */ 0,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
 };

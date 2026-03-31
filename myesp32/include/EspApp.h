@@ -790,12 +790,23 @@ namespace MyEsp
     {
       pinMode(cfg_->pin, OUTPUT);
       delay(10);
-      digitalWrite(cfg_->pin, cfg_->default_value);
+      writeValue(cfg_->default_value);
       return true;
+    }
+
+    void writeValue(int value) {
+      value_ = value;
+      int actual_value =  value_;
+      if (cfg_->inverse) {
+        actual_value = actual_value ? 0 : 1;
+      }
+      digitalWrite(cfg_->pin, actual_value);
     }
 
   private:
     const Switch1Config *cfg_;
+  public:
+    int value_ = 0;
   };
 
   class Switch2 : public Switch1

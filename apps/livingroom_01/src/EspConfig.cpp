@@ -72,7 +72,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/livingroom/fan1/set",
     /*.mqtt_status = */ "home/livingroom/fan1/status",
     /*.pin = */ 4,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 1,
+    /*.inverse = */ 1, 
   },
   //.switch2_config = 
   {
@@ -80,7 +81,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/mushroom/switch_lamp/set",
     /*.mqtt_status = */ "home/mushroom/switch_lamp/status",
     /*.pin = */ 1,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
   //.switch3_config = 
   {
@@ -88,7 +90,8 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/mushroom/switch_fan/set",
     /*.mqtt_status = */ "home/mushroom/switch_fan/status",
     /*.pin = */ 2,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
   //.switch4_config = 
   {
@@ -96,6 +99,7 @@ const MyEsp::EspConfig g_espconfig = {
     /*.mqtt_set = */ "home/mushroom/lamp4/set",
     /*.mqtt_status = */ "home/mushroom/lamp4/status",
     /*.pin = */ 3,
-    /*.default_value = */ 0, 
+    /*.default_value = */ 0,
+    /*.inverse = */ 0, 
   },
 };

@@ -36,8 +36,8 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "OFF" : "ON");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "OFF" : "ON");
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "ON" : "OFF");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, g_espconfig.switch1_config.default_value ? "ON" : "OFF");
       break;
     }
   }
@@ -46,7 +46,7 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch1_config.pin, status ? LOW : HIGH );
+      espApp.switch1_.writeValue(status);
       break;
     }
   }

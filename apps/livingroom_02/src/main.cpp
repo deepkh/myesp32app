@@ -50,14 +50,14 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "OFF" : "ON");
-      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "OFF" : "ON");
-      digitalWrite(g_espconfig.switch1_config.pin, lampPrevStatus ? LOW : HIGH);
+      Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "ON" : "OFF");
+      espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch1_config.mqtt_set, lampPrevStatus ? "ON" : "OFF");
+      espApp.switch1_.writeValue(lampPrevStatus);
       break;
     case 1:
       Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, lamp2PrevStatus ? "ON" : "OFF");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, lamp2PrevStatus ? "ON" : "OFF");
-      digitalWrite(g_espconfig.switch2_config.pin, lamp2PrevStatus ? HIGH : LOW);
+      espApp.switch2_.writeValue(lamp2PrevStatus);
       break;
     }
   }
@@ -66,12 +66,12 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch1_config.pin, status ? LOW : HIGH);
-      lampPrevStatus = status ? 0 : 1;
+      lampPrevStatus = status;
+      espApp.switch1_.writeValue(lampPrevStatus);
       break;
     case 1:
-      digitalWrite(g_espconfig.switch2_config.pin, status ? HIGH : LOW);
       lamp2PrevStatus = status;
+      espApp.switch2_.writeValue(lamp2PrevStatus);
       break;
     }
   }
@@ -132,8 +132,11 @@ static void handlePirStatus(unsigned int now, int status)
   }
 }
 
-#if 0
-static void handleLampStatus(unsigned int now, int status)
+// Manual        Trigger On
+//      1         
+//      0 
+
+static void handleLamp1Status(unsigned int now, int status)
 {
   if (lampPrevStatus == 0 && status == 0)
   {
@@ -144,22 +147,21 @@ static void handleLampStatus(unsigned int now, int status)
     lampPrevStatus = status;
     lastLampTriggered = now;
   }
-  else if (lampPrevStatus == 1 && status == 0)
+  else if (lampPrevStatus == 1 && status == 0 && lastLampTriggered > 0)
   {
     // Turn lamp off after 300 seconds
-    if ((now - lastLampTriggered) < 300000)
+    if ((now - lastLampTriggered) < 100000)
     {
       return;
     }
     espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, "OFF");
     lampPrevStatus = status;
   }
-  else if (lampPrevStatus == 1 && status == 1)
+  else if (lampPrevStatus == 1 && status == 1 && lastLampTriggered > 0)
   {
     lastLampTriggered = now;
   }
 }
-#endif
 
 static void storePermanetlyConfig()
 {

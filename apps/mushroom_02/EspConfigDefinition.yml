@@ -48,22 +48,26 @@ esp_config:
     mqtt_set: "home/mushroom/switch_pc/set"
     mqtt_status: "home/mushroom/switch_pc/status"
     pin: 0
-    default_value: 0
+    default_value: 1
+    inverse: 1
   switch2_config:
     enable: 0
     mqtt_set: "home/mushroom/switch_lamp/set"
     mqtt_status: "home/mushroom/switch_lamp/status"
     pin: 1
     default_value: 0
+    inverse: 0
   switch3_config:
     enable: 0
     mqtt_set: "home/mushroom/switch_fan/set"
     mqtt_status: "home/mushroom/switch_fan/status"
     pin: 2
     default_value: 0
+    inverse: 0
   switch4_config:
     enable: 0
     mqtt_set: "home/mushroom/lamp4/set"
     mqtt_status: "home/mushroom/lamp4/status"
     pin: 3
     default_value: 0
+    inverse: 0

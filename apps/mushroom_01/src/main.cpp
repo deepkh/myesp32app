@@ -55,12 +55,14 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
       Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch2_config.mqtt_set, lampPrevStatus ? "ON" : "OFF");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch2_config.mqtt_set, lampPrevStatus ? "ON" : "OFF");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.hcsr501_config.mqtt_set, pirCurrStatus ? "ON" : "OFF");
-      digitalWrite(g_espconfig.switch2_config.pin, lampPrevStatus ? HIGH : LOW);
+      espApp.switch2_.writeValue(lampPrevStatus);
+
       break;
     case 1:
       Serial.printf("mqttSwitchHandler %d '%s' sync up -> '%s'\n", index, g_espconfig.switch3_config.mqtt_set, fanPrevStatus ? "ON" : "OFF");
       espApp.mqtt_.GetMqttClient().publish(g_espconfig.switch3_config.mqtt_set, fanPrevStatus ? "ON" : "OFF");
-      digitalWrite(g_espconfig.switch3_config.pin, fanPrevStatus ? HIGH : LOW);
+      espApp.switch3_.writeValue(fanPrevStatus);
+
       break;
     }
   }
@@ -69,16 +71,16 @@ static void mqttSwitchHandler(unsigned int index, const char *topic, const char 
     switch (index)
     {
     case 0:
-      digitalWrite(g_espconfig.switch2_config.pin, status ? HIGH : LOW);
       lampPrevStatus = status;
+      espApp.switch2_.writeValue(lampPrevStatus);
       if (status)
       {
         lastLampTriggered = now;
       }
       break;
     case 1:
-      digitalWrite(g_espconfig.switch3_config.pin, status ? HIGH : LOW);
       fanPrevStatus = status;
+      espApp.switch3_.writeValue(fanPrevStatus);
       if (status)
       {
         lastFanTriggered = now;
