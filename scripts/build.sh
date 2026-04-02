@@ -2,26 +2,41 @@
 
 set -e
 
+target_app=""
+
 # Function to check parameters
 CheckParams() {
     local allowed=("generate" "clean" "clean_all" "build" "clean_build" "fw_update" ) 
     local found=false
 
+    if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
+        echo "No valid parameters (${allowed[@]}) were used."
+        echo "Usage: $0 (${allowed[@]})"
+        exit 1
+    fi
+
     # Loop through all script arguments
-    for arg in "$@"; do
-        for cmd in "${allowed[@]}"; do
-            if [[ "$arg" == "$cmd" ]]; then
-                echo "Parameter '$arg' is used."
-                found=true
-            fi
-        done
+    arg="$1"
+    echo "arg = ${arg}"
+    for cmd in "${allowed[@]}"; do
+        if [[ "$arg" == "$cmd" ]]; then
+            echo "Parameter '$arg' is used."
+            found=true
+        fi
     done
+    
+    # Target app
+    if [ "$#" -eq 2 ];then
+      target_app="$2"
+      echo "target_app=${target_app}"
+    fi
 
     if [[ "$found" == false ]]; then
         echo "No valid parameters (${allowed[@]}) were used."
         echo "Usage: $0 (${allowed[@]})"
         return 1
     fi
+
 }
 
 # Example usage with all script arguments
@@ -71,9 +86,17 @@ fw_update() {
 }
 
 for app_dir in "${APPS_DIR}"/*; do
-    echo "${app_dir}"
     # Ensure it's a directory
     [[ -d "${app_dir}" ]] || continue
+
+    app_name=$(basename "${app_dir}")
+
+    # If target_app is set, skip others
+    if [[ -n "$target_app" && "$app_name" != "$target_app" ]]; then
+        continue
+    fi
+    
+    echo "${app_dir}"
 
     # Check if it's a valid app
     if [[ -f "${app_dir}/EspConfigDefinition.yml" ]]; then
